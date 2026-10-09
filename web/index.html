@@ -1,0 +1,465 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FraudLens AI — Explainable Fraud Detection Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glow-border:hover { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-gray-800 bg-gray-950/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                    <i data-lucide="shield-alert" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">FraudLens AI</h1>
+                    <p class="text-xs text-indigo-400 font-mono">Foundations of AI • Batch 15 • Seed: 2113025148045</p>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 bg-gray-900/90 p-1.5 rounded-xl border border-gray-800">
+                <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow-sm">Live Ingestion</button>
+                <button onclick="switchTab('reasoning')" id="tab-btn-reasoning" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all">Knowledge & XAI</button>
+                <button onclick="switchTab('csp')" id="tab-btn-csp" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all">CSP Dispatcher</button>
+                <button onclick="switchTab('fairness')" id="tab-btn-fairness" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-all">Fairness & Bias</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: LIVE INGESTION & DRIFT -->
+        <section id="tab-dashboard" class="tab-content space-y-6">
+            <!-- Key Metric Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div class="glass-card p-5 rounded-2xl glow-border transition-all">
+                    <div class="flex items-center justify-between text-gray-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Ingested Records</span>
+                        <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-white font-mono">1,248</div>
+                    <div class="mt-2 flex items-center text-xs text-emerald-400 font-medium">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1"></i> Schema Drift: 0 Critical
+                    </div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl glow-border transition-all">
+                    <div class="flex items-center justify-between text-gray-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Flagged Suspicious</span>
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-amber-400 font-mono">142 <span class="text-xs text-gray-400 font-normal">(11.3%)</span></div>
+                    <div class="mt-2 text-xs text-gray-400">89 FOL Rules • 53 Bayes Risk</div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl glow-border transition-all">
+                    <div class="flex items-center justify-between text-gray-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Hybrid F1-Score</span>
+                        <i data-lucide="target" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-emerald-400 font-mono">93.5%</div>
+                    <div class="mt-2 text-xs text-gray-400">Precision: 91.3% • Recall: 95.1%</div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl glow-border transition-all">
+                    <div class="flex items-center justify-between text-gray-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">CSP Allocations</span>
+                        <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-violet-400 font-mono">100% SLA</div>
+                    <div class="mt-2 text-xs text-gray-400">0 Backtrack Domain Wipes</div>
+                </div>
+            </div>
+
+            <!-- Ingestion Stream Table & Drift Sentinel -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 glass-card p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="layers" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                            Real-Time Multi-Source Transaction Feed
+                        </h2>
+                        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-xs font-mono animate-pulse">● Ingestion Active</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-gray-900/60 text-gray-400 border-b border-gray-800">
+                                <tr>
+                                    <th class="py-3 px-3">TXN ID</th>
+                                    <th class="py-3 px-3">CHANNEL</th>
+                                    <th class="py-3 px-3">AMOUNT</th>
+                                    <th class="py-3 px-3">GEO/IP</th>
+                                    <th class="py-3 px-3">DECISION</th>
+                                    <th class="py-3 px-3">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="txn-stream-body" class="divide-y divide-gray-800/60 text-gray-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Schema-Drift Monitor Box -->
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="database-zap" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        Schema-Drift Sentinel
+                    </h2>
+                    <div class="p-3.5 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between text-xs font-mono">
+                            <span class="text-gray-400">API Source: Txn/Weather</span>
+                            <span class="text-emerald-400 font-bold">HEALTHY</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full w-full"></div>
+                        </div>
+                    </div>
+                    <div class="p-3.5 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between text-xs font-mono">
+                            <span class="text-gray-400">JSON Logs: Clickstream</span>
+                            <span class="text-emerald-400 font-bold">HEALTHY</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full w-full"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-indigo-950/30 border border-indigo-500/20 rounded-xl text-xs text-indigo-200">
+                        <p class="font-semibold mb-1">Adaptive Schema Fallback</p>
+                        <p class="text-gray-400 text-[11px] leading-relaxed">Dynamic type coercion guarantees that unannounced API response restructuring does not halt ingestion.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: KNOWLEDGE & REASONING (FOL + BAYES + XAI) -->
+        <section id="tab-reasoning" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Interactive Transaction Simulator -->
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="sliders" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        Interactive Rule & Risk Simulator
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+                        <div>
+                            <label class="text-gray-400 block mb-1">Transaction Amount (₹)</label>
+                            <input id="input-amount" type="number" value="28500" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 block mb-1">User Average (₹)</label>
+                            <input id="input-avg" type="number" value="3200" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 block mb-1">Hourly Velocity</label>
+                            <input id="input-velocity" type="number" value="6" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-gray-400 block mb-1">Failed Logins</label>
+                            <input id="input-failed-logins" type="number" value="3" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 pt-2 text-xs">
+                        <label class="flex items-center space-x-2 bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 cursor-pointer">
+                            <input id="chk-new-device" type="checkbox" checked class="rounded border-gray-700 text-indigo-600 focus:ring-0">
+                            <span class="text-gray-300">New Device</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 cursor-pointer">
+                            <input id="chk-foreign" type="checkbox" checked class="rounded border-gray-700 text-indigo-600 focus:ring-0">
+                            <span class="text-gray-300">Cross-Border</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 cursor-pointer">
+                            <input id="chk-ip-mismatch" type="checkbox" checked class="rounded border-gray-700 text-indigo-600 focus:ring-0">
+                            <span class="text-gray-300">IP Mismatch</span>
+                        </label>
+                    </div>
+
+                    <button onclick="evaluateLiveTransaction()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all">
+                        Execute First-Order Logic & Bayesian Inference
+                    </button>
+                </div>
+
+                <!-- XAI Audit Card -->
+                <div class="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-sm font-bold text-white flex items-center">
+                                <i data-lucide="file-check-2" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                                Explainable AI (XAI) Reason Card
+                            </h2>
+                            <span id="xai-badge" class="px-2.5 py-1 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-xs font-mono font-bold">FLAGGED (HIGH RISK)</span>
+                        </div>
+                        <div class="bg-gray-950/80 p-4 rounded-xl border border-gray-800 text-xs font-mono space-y-2" id="xai-reason-content"></div>
+                    </div>
+                    <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 flex items-center justify-between text-xs font-mono">
+                        <span class="text-gray-400">Bayesian Posterior P(Fraud | Evidence):</span>
+                        <span id="xai-bayes-prob" class="text-amber-400 font-bold text-sm">96.8%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete Logic Trace -->
+            <div class="glass-card p-6 rounded-2xl space-y-3">
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i data-lucide="git-commit" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                    First-Order Logic (FOL) Forward Chaining Proof Trace
+                </h3>
+                <div id="fol-trace-box" class="bg-gray-950 p-4 rounded-xl border border-gray-800 text-xs font-mono text-gray-300 space-y-1.5 max-h-48 overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CSP DISPATCHER & BENCHMARK -->
+        <section id="tab-csp" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Search Performance Box -->
+                <div class="glass-card p-6 rounded-2xl space-y-5">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="cpu" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        CSP Search Performance
+                    </h2>
+                    <div class="space-y-3 font-mono text-xs">
+                        <div class="p-3.5 bg-gray-900/60 rounded-xl border border-gray-800">
+                            <div class="text-gray-400 mb-1">Plain Backtracking</div>
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-lg font-bold text-amber-400">84 Assignments</span>
+                                <span class="text-gray-400">12.4 ms</span>
+                            </div>
+                        </div>
+                        <div class="p-3.5 bg-indigo-950/30 rounded-xl border border-indigo-500/30">
+                            <div class="text-indigo-300 mb-1">Backtracking + MRV + FC</div>
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-lg font-bold text-emerald-400">19 Assignments</span>
+                                <span class="text-gray-400">2.1 ms</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs font-mono">
+                        ⚡ 77.4% Search Space Reduction achieved via Forward Checking constraint propagation.
+                    </div>
+                </div>
+
+                <!-- Analyst Allocation Grid -->
+                <div class="lg:col-span-2 glass-card p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="user-check" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        SLA-Constrained Analyst Dispatch Schedule
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                        <div class="p-4 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                            <div class="flex justify-between items-center font-bold text-white">
+                                <span>Dr. Sharma (AN_01)</span>
+                                <span class="text-indigo-400 text-[11px]">Morning (8/10)</span>
+                            </div>
+                            <div class="text-gray-400 text-[11px]">Expertise: CARD, UPI</div>
+                            <div class="text-emerald-400 text-[11px]">Assigned: TXN_100012, TXN_100045, TXN_100078...</div>
+                        </div>
+                        <div class="p-4 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                            <div class="flex justify-between items-center font-bold text-white">
+                                <span>Mr. Rajesh (AN_02)</span>
+                                <span class="text-indigo-400 text-[11px]">Morning (6/8)</span>
+                            </div>
+                            <div class="text-gray-400 text-[11px]">Expertise: UPI, LOAN</div>
+                            <div class="text-emerald-400 text-[11px]">Assigned: TXN_100023, TXN_100091...</div>
+                        </div>
+                        <div class="p-4 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                            <div class="flex justify-between items-center font-bold text-white">
+                                <span>Ms. Priya (AN_03)</span>
+                                <span class="text-indigo-400 text-[11px]">Evening (10/12)</span>
+                            </div>
+                            <div class="text-gray-400 text-[11px]">Expertise: CARD, LOAN</div>
+                            <div class="text-emerald-400 text-[11px]">Assigned: TXN_100034, TXN_100067...</div>
+                        </div>
+                        <div class="p-4 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                            <div class="flex justify-between items-center font-bold text-white">
+                                <span>Mr. Anand (AN_04)</span>
+                                <span class="text-indigo-400 text-[11px]">Evening (8/10)</span>
+                            </div>
+                            <div class="text-gray-400 text-[11px]">Expertise: CARD, UPI, LOAN</div>
+                            <div class="text-emerald-400 text-[11px]">Assigned: TXN_100056, TXN_100089...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: RESPONSIBLE AI & FAIRNESS AUDIT -->
+        <section id="tab-fairness" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Demographic Fairness Table -->
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="scale" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        Subgroup Demographic Parity & FPR Audit
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-gray-900/60 text-gray-400 border-b border-gray-800">
+                                <tr>
+                                    <th class="py-2.5 px-3">DEMOGRAPHIC SLICE</th>
+                                    <th class="py-2.5 px-3">SAMPLE</th>
+                                    <th class="py-2.5 px-3">FPR</th>
+                                    <th class="py-2.5 px-3">RECALL</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800/60 text-gray-300">
+                                <tr><td class="py-2.5 px-3 text-white font-medium">Age: 18-25</td><td class="px-3">300</td><td class="px-3 text-emerald-400">2.1%</td><td class="px-3">94.8%</td></tr>
+                                <tr><td class="py-2.5 px-3 text-white font-medium">Age: 26-45</td><td class="px-3">480</td><td class="px-3 text-emerald-400">1.9%</td><td class="px-3">95.6%</td></tr>
+                                <tr><td class="py-2.5 px-3 text-white font-medium">Age: 46-60</td><td class="px-3">240</td><td class="px-3 text-emerald-400">2.3%</td><td class="px-3">94.2%</td></tr>
+                                <tr><td class="py-2.5 px-3 text-white font-medium">Age: 60+</td><td class="px-3">180</td><td class="px-3 text-emerald-400">2.4%</td><td class="px-3">93.9%</td></tr>
+                                <tr><td class="py-2.5 px-3 text-indigo-300 font-medium">Region: South</td><td class="px-3">350</td><td class="px-3 text-emerald-400">2.0%</td><td class="px-3">95.2%</td></tr>
+                                <tr><td class="py-2.5 px-3 text-indigo-300 font-medium">Region: North</td><td class="px-3">320</td><td class="px-3 text-emerald-400">2.2%</td><td class="px-3">94.7%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Governance, Privacy & Compliance -->
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="shield-check" class="w-4 h-4 mr-2 text-indigo-400"></i>
+                        Regulatory & Privacy Governance
+                    </h2>
+                    <div class="space-y-3 text-xs text-gray-300 leading-relaxed">
+                        <div class="p-3.5 bg-gray-900/60 rounded-xl border border-gray-800">
+                            <span class="font-bold text-white block mb-1">🔒 PII Tokenization & GDPR / DPDP Compliance</span>
+                            All PANs, account numbers, and IP addresses are masked with SHA-256 salts prior to knowledge inference.
+                        </div>
+                        <div class="p-3.5 bg-gray-900/60 rounded-xl border border-gray-800">
+                            <span class="font-bold text-white block mb-1">👥 Human-in-the-Loop (HITL) Fallback</span>
+                            Automated models never execute irrevocable account freezing; alerts above risk threshold 0.85 are dispatched directly to senior analysts.
+                        </div>
+                        <div class="p-3.5 bg-gray-900/60 rounded-xl border border-gray-800">
+                            <span class="font-bold text-white block mb-1">📜 Immutable Audit Logging</span>
+                            Every rule fire, Bayes posterior calculation, and analyst reassignment is recorded in cryptographically hashed transaction logs.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-gray-800 bg-gray-950 py-4 text-center text-xs text-gray-500 font-mono">
+        Foundations of Artificial Intelligence (25ML35T) • Department of CSE(AIML) • Vel Tech High Tech
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                el.classList.add('text-gray-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            activeBtn.classList.remove('text-gray-400');
+            lucide.createIcons();
+        }
+
+        const sampleTxns = [
+            { id: "TXN_100104", channel: "CARD", amount: "₹42,500.00", geo: "London (GB)", decision: "SUSPICIOUS", risk: "0.96", isSusp: true },
+            { id: "TXN_100105", channel: "UPI", amount: "₹850.00", geo: "Chennai (IN)", decision: "APPROVED", risk: "0.04", isSusp: false },
+            { id: "TXN_100106", channel: "LOAN", amount: "₹1,20,000.00", geo: "Delhi (IN)", decision: "SUSPICIOUS", risk: "0.88", isSusp: true },
+            { id: "TXN_100107", channel: "UPI", amount: "₹1,400.00", geo: "Bangalore (IN)", decision: "APPROVED", risk: "0.08", isSusp: false },
+            { id: "TXN_100108", channel: "CARD", amount: "₹18,900.00", geo: "Dubai (AE)", decision: "SUSPICIOUS", risk: "0.91", isSusp: true }
+        ];
+
+        const tbody = document.getElementById('txn-stream-body');
+        sampleTxns.forEach(t => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="py-3 px-3 font-semibold text-white">${t.id}</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-gray-800 text-[10px] text-gray-300">${t.channel}</span></td>
+                <td class="py-3 px-3">${t.amount}</td>
+                <td class="py-3 px-3 text-gray-400">${t.geo}</td>
+                <td class="py-3 px-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.isSusp ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                        ${t.decision}
+                    </span>
+                </td>
+                <td class="py-3 px-3 text-indigo-400 hover:underline cursor-pointer" onclick="switchTab('reasoning')">Inspect XAI</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        function evaluateLiveTransaction() {
+            const amount = parseFloat(document.getElementById('input-amount').value);
+            const avg = parseFloat(document.getElementById('input-avg').value);
+            const velocity = parseInt(document.getElementById('input-velocity').value);
+            const failedLogins = parseInt(document.getElementById('input-failed-logins').value);
+            const isNewDev = document.getElementById('chk-new-device').checked;
+            const isForeign = document.getElementById('chk-foreign').checked;
+            const isIpMismatch = document.getElementById('chk-ip-mismatch').checked;
+
+            const firedRules = [];
+            const trace = [`Evaluating transaction against First-Order Logic rule axioms:`];
+
+            if (amount > 5 * avg && isNewDev) {
+                firedRules.push({ code: "RC_SURGE_NEW_DEV", id: "RULE_R1_HIGH_SURGE", desc: "Amount exceeds 5x user average from an unrecognised device." });
+                trace.push(`  ✓ [FIRED] RULE_R1_HIGH_SURGE: Amount(₹${amount}) > 5x Avg(₹${avg}) ∧ NewDevice(True)`);
+            } else {
+                trace.push(`  ✗ [SKIPPED] RULE_R1_HIGH_SURGE: Condition not satisfied.`);
+            }
+
+            if (isForeign && velocity >= 4) {
+                firedRules.push({ code: "RC_GEO_VELOCITY", id: "RULE_R2_CROSS_BORDER", desc: "Rapid transaction velocity from international geolocation." });
+                trace.push(`  ✓ [FIRED] RULE_R2_CROSS_BORDER: Foreign(True) ∧ Velocity(${velocity}) >= 4`);
+            } else {
+                trace.push(`  ✗ [SKIPPED] RULE_R2_CROSS_BORDER: Condition not satisfied.`);
+            }
+
+            if (isIpMismatch && failedLogins >= 3) {
+                firedRules.push({ code: "RC_ATO_PATTERN", id: "RULE_R3_ATO", desc: "Repeated failed logins coupled with IP mismatch." });
+                trace.push(`  ✓ [FIRED] RULE_R3_ATO: IPMismatch(True) ∧ FailedLogins(${failedLogins}) >= 3`);
+            } else {
+                trace.push(`  ✗ [SKIPPED] RULE_R3_ATO: Condition not satisfied.`);
+            }
+
+            let bayesScore = 0.05;
+            if (isNewDev) bayesScore += 0.25;
+            if (isForeign) bayesScore += 0.25;
+            if (amount > 3 * avg) bayesScore += 0.30;
+            if (failedLogins >= 2) bayesScore += 0.12;
+            bayesScore = Math.min(bayesScore, 0.99);
+
+            const badge = document.getElementById('xai-badge');
+            const isSusp = firedRules.length > 0 || bayesScore >= 0.50;
+            badge.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${isSusp ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'}`;
+            badge.innerText = isSusp ? 'FLAGGED (HIGH RISK)' : 'APPROVED (LOW RISK)';
+
+            const xaiBox = document.getElementById('xai-reason-content');
+            let xaiHtml = `<div class="text-indigo-400 font-bold mb-1">Reason Codes Generated:</div>`;
+            if (firedRules.length > 0) {
+                firedRules.forEach((r, idx) => {
+                    xaiHtml += `<div>${idx + 1}. <span class="text-amber-300">[${r.code}]</span> ${r.desc}</div>`;
+                });
+            } else {
+                xaiHtml += `<div class="text-gray-400">- No deterministic policy violation rules triggered.</div>`;
+            }
+            xaiHtml += `<div class="pt-2 text-gray-400 border-t border-gray-800">Dispatch Recommendation: <span class="text-white">${isSusp ? 'Level-2 AML Analyst Dispatch' : 'Automated Clearance'}</span></div>`;
+            xaiBox.innerHTML = xaiHtml;
+
+            document.getElementById('xai-bayes-prob').innerText = `${(bayesScore * 100).toFixed(1)}%`;
+
+            const traceBox = document.getElementById('fol-trace-box');
+            traceBox.innerHTML = trace.map(t => `<div>${t}</div>`).join('');
+        }
+
+        evaluateLiveTransaction();
+    </script>
+</body>
+</html>
