@@ -1,6 +1,6 @@
 # Explainable Fraud Detection Pipeline (AI in Finance)
 **Course:** 25ML35T Foundations of Artificial Intelligence — Micro Level Project  
-**Batch:** 15 | **Seed:** `113025148045`
+**Batch:** 15 | **Register No :** `113025148045`
 # Batch 15 Explainable Fraud Detection Pipeline
 
 ## Project overview
@@ -136,7 +136,3 @@ The accompanying academic report follows the supplied Foundations of Artificial 
 The student identity fields, GitHub details, and authentic running-website screenshots should be completed by the student where required.
 
 
-## How to Run
-1. Install requirements: `pip install -r requirements.txt`
-2. Run master prototype: `python -m src.main`
-3. Run tests: `python -m unittest discover tests/`
